@@ -1,9 +1,9 @@
 import javax.swing.*;
 import java.awt.*;
+import java.awt.event.*;
 import java.util.ArrayList;
 import java.util.List;
-import java.awt.event.KeyAdapter;
-import java.awt.event.KeyEvent;
+
 
 public class SnakeGame extends JPanel {
 
@@ -16,6 +16,7 @@ public class SnakeGame extends JPanel {
     private int parts = 4; // snake parts starting lenght
     private int appleX = 13; // X position of the apple
     private int appleY = 8; // Y position of the apple
+    private boolean gameStarted = false;
 
     public SnakeGame() {
         setPreferredSize(new Dimension(BLOCK_SIZE * cols, BLOCK_SIZE * rows)); //Setting the size of the window
@@ -28,7 +29,12 @@ public class SnakeGame extends JPanel {
         addKeyListener(new KeyAdapter() {
             @Override
             public void keyPressed(KeyEvent e) {
+                if (!gameStarted) {
+                    gameStarted = true;
+                    timer.start();
+                }
                 switch (e.getKeyCode()) {
+                    case KeyEvent.VK_ESCAPE -> gameStarted = false;
                     case KeyEvent.VK_UP -> {if (dy == 0) {dx = 0; dy = -1;}}
                     case KeyEvent.VK_DOWN -> {if (dy == 0) {dx = 0; dy = 1;}}
                     case KeyEvent.VK_LEFT -> {if (dx == 0) {dx = -1; dy = 0;}}
@@ -36,7 +42,6 @@ public class SnakeGame extends JPanel {
                 }
             }
         });
-        timer.start();
     }
 
     @Override
@@ -84,6 +89,17 @@ public class SnakeGame extends JPanel {
 
         drawApple(g2d, appleX, appleY);
         drawSnake(g2d);
+        drawMenu(g2d);
+    }
+
+    private void drawMenu(Graphics2D g2d) {
+        g2d.setColor(new Color(255, 255, 255, 200));
+        g2d.fillRect(BLOCK_SIZE * cols / 2 - 150, BLOCK_SIZE * rows / 2 - 50, 300, 100);
+        g2d.setColor(Color.BLACK);
+        g2d.setFont(new Font("Arial", Font.BOLD, 24));
+        g2d.drawString("Snake Game", BLOCK_SIZE * cols / 2 - 70, BLOCK_SIZE * rows / 2 - 20);
+        g2d.setFont(new Font("Arial", Font.PLAIN, 18));
+        g2d.drawString("Press any key to start", BLOCK_SIZE * cols / 2 - 100, BLOCK_SIZE * rows / 2 + 20);
     }
 
     private void drawSnake(Graphics2D g2d) {
@@ -107,6 +123,12 @@ public class SnakeGame extends JPanel {
     }
 
     private void tick() {
+        if (!gameStarted) {
+            timer.stop();
+        } else {
+            timer.start();
+        }
+
         Point head = snakeSegments.get(snakeSegments.size() - 1);
         Point next = new Point(head.x + dx, head.y + dy);
 
@@ -140,11 +162,10 @@ public class SnakeGame extends JPanel {
             JButton button = new JButton("Click Me");
             frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
             frame.add(panel);
-            frame.add(button);
+            // frame.add(button);
             frame.pack();
             frame.setLocationRelativeTo(null);
             frame.setVisible(true);
-            
             panel.requestFocusInWindow();
         });
     }
