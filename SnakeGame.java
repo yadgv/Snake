@@ -13,7 +13,7 @@ public class SnakeGame extends JPanel {
     private final Timer timer = new Timer(200, e -> tick()); //Timer that controls game loop (game ticks)
     private final int rows = 18; // Number of rows of blocks + wall
     private final int cols = 18; // Number of columns of blocks + wall
-    private int parts = 4; // snake parts starting lenght
+    private final int parts = 4; // snake parts starting lenght
     private int appleX = 13; // X position of the apple
     private int appleY = 8; // Y position of the apple
     private boolean gameStarted = false;
@@ -24,20 +24,19 @@ public class SnakeGame extends JPanel {
     public SnakeGame() {
         setPreferredSize(new Dimension(blockSize * cols, blockSize * rows)); //Setting the size of the window
 
-        for (int section = 0; section < parts; section++) {
-            snakeSegments.add(new Point(5 + section, 8));
-        } //Adding the starting snake to the list
+        for (int section = 0; section < parts; section++) snakeSegments.add(new Point(4 + section, 8)); //Adding the starting snake to the list
 
         setFocusable(true); //Focuses on window to listen for key events
         addKeyListener(new KeyAdapter() {
             @Override
             public void keyPressed(KeyEvent e) {
-                if (!gameStarted) {
+                if (!gameStarted || gameOver) {
                     gameStarted = true;
+                    gameOver = false;
                     timer.start();
                 }
                 switch (e.getKeyCode()) {
-                    case KeyEvent.VK_ESCAPE -> gameStarted = false;
+                    case KeyEvent.VK_ESCAPE -> {gameStarted = false; gameOver = false;}
                     case KeyEvent.VK_UP -> {if (dy == 0) {dx = 0; dy = -1;}}
                     case KeyEvent.VK_DOWN -> {if (dy == 0) {dx = 0; dy = 1;}}
                     case KeyEvent.VK_LEFT -> {if (dx == 0) {dx = -1; dy = 0;}}
@@ -115,11 +114,18 @@ public class SnakeGame extends JPanel {
     }
 
     private void tick() {
-        if (!gameStarted) {
+        if (!gameStarted || gameOver) {
             timer.stop();
+            snakeSegments.clear();
+            for (int section = 0; section < parts; section++) snakeSegments.add(new Point(4 + section, 8));
+            appleX = 13; appleY = 8;
+            dx = 1; dy = 0;
             menuX = blockSize * cols / 2 - 150;
+            repaint();
+            return;
         } else {
             menuX = blockSize * cols + 200;
+            gameOver = false;
             timer.start();
         }
 
@@ -128,10 +134,10 @@ public class SnakeGame extends JPanel {
 
         boolean hitWall = next.x < 1 || next.x >= cols - 1 || next.y < 1 || next.y >= rows - 1;
         if (hitWall || snakeSegments.contains(next)) {
-            timer.stop(); // game over
+            gameOver = true;
             return;
         }
-
+        
         if (next.equals(new Point(appleX, appleY))) {
             int tempx = (int) (Math.random() * (cols - 2)) + 1;
             int tempy = (int) (Math.random() * (rows - 2)) + 1;
@@ -145,7 +151,7 @@ public class SnakeGame extends JPanel {
             snakeSegments.remove(0); // drop tail if not eating food
         }
 
-        snakeSegments.add(next); // new head
+        snakeSegments.add(next);
         repaint();
     }
 
@@ -153,10 +159,8 @@ public class SnakeGame extends JPanel {
         SwingUtilities.invokeLater(() -> {
             JFrame frame = new JFrame("Snake Game");
             SnakeGame panel = new SnakeGame();
-            JButton button = new JButton("Click Me");
             frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
             frame.add(panel);
-            // frame.add(button);
             frame.pack();
             frame.setLocationRelativeTo(null);
             frame.setVisible(true);
