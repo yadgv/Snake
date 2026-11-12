@@ -18,6 +18,7 @@ public class SnakeGame extends JPanel {
     private final int parts = (int) ((cols-2)*0.30); // snake parts starting lenght
     private final int startx = cols/2 -parts-1; // Starting X position of the snake
     private final BufferedImage board = new BufferedImage(blockSize * cols, blockSize * rows, BufferedImage.TYPE_INT_RGB);
+    private final BufferedImage menu = new BufferedImage(300, 100, BufferedImage.TYPE_INT_ARGB);
     private int menuX = blockSize * cols / 2 - 150, menuY = blockSize * rows / 2 - 50; // Position of the menu
     private int appleX = cols/2 + parts+1; // X position of the apple
     private int appleY = rows/2; // Y position of the apple
@@ -27,27 +28,8 @@ public class SnakeGame extends JPanel {
 
     public SnakeGame() {
         setPreferredSize(new Dimension(blockSize * cols, blockSize * rows)); //Setting the size of the window
-        Graphics2D g2d = board.createGraphics();
-        for (int row = 0; row < rows; row++) {
-            for (int col = 0; col < cols; col++) {
-                int x = col * blockSize, y = row * blockSize;
-                int half = blockSize / 2;
-                boolean right = col == cols - 1, left = col == 0;
-                boolean top = row == 0, bottom = row == rows - 1;
-
-                int rx = (left) ? x+half : x;
-                int ry = (top) ? y+half : y;
-                int rw = (right || left) ? half : blockSize;
-                int rh = (top || bottom) ? half : blockSize;
-
-                if ((right || left || top || bottom)) g2d.setColor(new Color(0, 128, 0));
-                else if ((row + col) % 2 == 0) g2d.setColor(new Color(80, 200, 120));
-                else g2d.setColor(new Color(152, 255, 152));
-                
-                g2d.fillRect(rx, ry, rw, rh);
-            }
-        }
-        g2d.dispose();
+        bufferBoard();
+        bufferMenu();
 
         for (int section = 0; section < parts; section++) snakeSegments.add(new Point(startx + section, rows/2)); //Adding the starting snake to the list
 
@@ -75,12 +57,47 @@ public class SnakeGame extends JPanel {
         drawBoard(g2d);
         drawApple(g2d, appleX, appleY);
         drawSnake(g2d);
-        drawMenu(g2d);
-        Toolkit.getDefaultToolkit().sync();
+        if (!gameStarted || gameOver) drawMenu(g2d);
+        g2d.drawString("Score: " + score, 20, 20);
+    }
+
+    private void bufferBoard(){
+        Graphics2D g2d = board.createGraphics();
+        for (int row = 0; row < rows; row++) {
+            for (int col = 0; col < cols; col++) {
+                int x = col * blockSize, y = row * blockSize;
+                int half = blockSize / 2;
+                boolean right = col == cols - 1, left = col == 0;
+                boolean top = row == 0, bottom = row == rows - 1;
+
+                int rx = (left) ? x+half : x;
+                int ry = (top) ? y+half : y;
+                int rw = (right || left) ? half : blockSize;
+                int rh = (top || bottom) ? half : blockSize;
+
+                if ((right || left || top || bottom)) g2d.setColor(new Color(0, 128, 0));
+                else if ((row + col) % 2 == 0) g2d.setColor(new Color(80, 200, 120));
+                else g2d.setColor(new Color(152, 255, 152));
+                
+                g2d.fillRect(rx, ry, rw, rh);
+            }
+        }
+        g2d.dispose();
     }
 
     private void drawBoard(Graphics2D g2d) {
         g2d.drawImage(board, 0, 0, null);
+    }
+
+    private void bufferMenu() {
+        Graphics2D g2d = menu.createGraphics();
+        g2d.setColor(new Color(0, 0, 0, 200));
+        g2d.fillRect(0, 0, 300, 100);
+        g2d.setColor(Color.WHITE);
+        g2d.setFont(new Font("Arial", Font.BOLD, 24));
+        g2d.drawString("Snake Game", 80, 30);
+        g2d.drawString("Press any key to start", 50, 70);
+        g2d.dispose();
     }
 
     private void startGame() {
@@ -95,13 +112,7 @@ public class SnakeGame extends JPanel {
     }
 
     private void drawMenu(Graphics2D g2d) {
-        g2d.setColor(new Color(0, 0, 0, 200));
-        g2d.fillRect(menuX, menuY, 300, 100);
-        g2d.setColor(Color.WHITE);
-        g2d.setFont(new Font("Arial", Font.BOLD, 24));
-        g2d.drawString("Score: " + score, 20, 20);
-        g2d.drawString("Snake Game", menuX + 80, menuY + 30);
-        g2d.drawString("Press any key to start", menuX + 50, menuY + 70);
+        g2d.drawImage(menu, menuX, menuY, null);
     }
 
     private void drawSnake(Graphics2D g2d) {
@@ -117,16 +128,16 @@ public class SnakeGame extends JPanel {
     }
 
     private void tick() {
-        System.out.println(timer.getDelay());
+        // System.out.println(timer.getDelay());
         if (!gameStarted || gameOver) {
             timer.stop();
             menuX = blockSize * cols / 2 - 150;
+            
             repaint();
             return;
         } else {
             menuX = blockSize * cols + 200;
             gameOver = false;
-            timer.start();
         }
 
         Point head = snakeSegments.get(snakeSegments.size() - 1);
