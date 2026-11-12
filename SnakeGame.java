@@ -10,31 +10,33 @@ public class SnakeGame extends JPanel {
     private final List<Point> snakeSegments = new ArrayList<>(); //List that hold all snake segments
     private final int blockSize = 40; // Size of each block in pixels
     private int dx = 1, dy = 0; //The directions of the snake movement
-    private final Timer timer = new Timer(200, e -> tick()); //Timer that controls game loop (game ticks)
-    private final int rows = 18; // Number of rows of blocks + wall
-    private final int cols = 18; // Number of columns of blocks + wall
-    private final int parts = 4; // snake parts starting lenght
-    private int appleX = 13; // X position of the apple
-    private int appleY = 8; // Y position of the apple
+    private final Timer timer = new Timer(150, e -> tick()); //Timer that controls game loop (game ticks)
+    private int size = 1; // size of map
+    private final int rows = switch(size){case 0 -> 11; case 1 -> 17; case 2 -> 23;default -> 117;}; // Number of rows of blocks + wall
+    private final int cols = switch(size){case 0 -> 12; case 1 -> 19; case 2 -> 26;default -> 18;}; // Number of columns of blocks + wall
+    private final int parts = (int) ((cols-2)*0.30); // snake parts starting lenght
+    private final int startx = cols/2 -parts-1; // Starting X position of the snake
+    private int appleX = cols/2 + parts+1; // X position of the apple
+    private int appleY = rows/2; // Y position of the apple
     private boolean gameStarted = false;
     private boolean gameOver = false;
+    private int score = 0;
     int menuX = blockSize * cols / 2 - 150;
     int menuY = blockSize * rows / 2 - 50;
 
     public SnakeGame() {
         setPreferredSize(new Dimension(blockSize * cols, blockSize * rows)); //Setting the size of the window
 
-        for (int section = 0; section < parts; section++) snakeSegments.add(new Point(4 + section, 8)); //Adding the starting snake to the list
+        for (int section = 0; section < parts; section++) snakeSegments.add(new Point(startx + section, rows/2)); //Adding the starting snake to the list
 
         setFocusable(true); //Focuses on window to listen for key events
         addKeyListener(new KeyAdapter() {
             @Override
             public void keyPressed(KeyEvent e) {
                 if (!gameStarted || gameOver) {
-                    gameStarted = true;
-                    gameOver = false;
-                    timer.start();
+                    startGame();
                 }
+
                 switch (e.getKeyCode()) {
                     case KeyEvent.VK_ESCAPE -> {gameStarted = false; gameOver = false;}
                     case KeyEvent.VK_UP -> {if (dy == 0) {dx = 0; dy = -1;}}
@@ -83,11 +85,33 @@ public class SnakeGame extends JPanel {
         }
     }
 
+    private void startGame() {
+        // switch (size){
+        //     case 0 -> {rows = 11; cols = 12;}
+        //     case 1 -> {rows = 17; cols = 19;}
+        //     case 2 -> {rows = 23; cols = 26;}
+        //     default -> throw new IllegalStateException("Unexpected value: " + size);
+        // }
+        gameStarted = true;
+        gameOver = false;
+        score = 0;
+        snakeSegments.clear();
+        for (int section = 0; section < parts; section++) {
+            snakeSegments.add(new Point(startx + section, rows / 2));
+        }
+        appleX = cols / 2 + parts + 1;
+        appleY = rows / 2;
+        dx = 1;
+        dy = 0;
+        timer.start();
+    }
+
     private void drawMenu(Graphics2D g2d) {
         g2d.setColor(new Color(255, 255, 255, 200));
         g2d.fillRect(menuX, menuY, 300, 100);
         g2d.setColor(Color.BLACK);
         g2d.setFont(new Font("Arial", Font.BOLD, 24));
+        g2d.drawString("Score: " + score, 20, 20);
         g2d.drawString("Snake Game", menuX + 80, menuY + 30);
         g2d.setFont(new Font("Arial", Font.PLAIN, 18));
         g2d.drawString("Press any key to start", menuX + 50, menuY + 70);
@@ -100,26 +124,14 @@ public class SnakeGame extends JPanel {
         }
     }
 
-    public void updateSnake(int[][] newSnake) {
-        snakeSegments.clear();
-        for (int[] segment : newSnake) {
-            snakeSegments.add(new Point(segment[0], segment[1]));
-        }
-        repaint();
-    }
-
     public void drawApple(Graphics2D g2d, int appleX, int appleY) {
         g2d.setColor(Color.RED);
-        g2d.fillRect(appleX * blockSize+5, appleY * blockSize+5, blockSize-10, blockSize-10);
+        g2d.fillOval(appleX * blockSize+3, appleY * blockSize+3, blockSize-6, blockSize-6);
     }
 
     private void tick() {
         if (!gameStarted || gameOver) {
             timer.stop();
-            snakeSegments.clear();
-            for (int section = 0; section < parts; section++) snakeSegments.add(new Point(4 + section, 8));
-            appleX = 13; appleY = 8;
-            dx = 1; dy = 0;
             menuX = blockSize * cols / 2 - 150;
             repaint();
             return;
@@ -139,6 +151,7 @@ public class SnakeGame extends JPanel {
         }
         
         if (next.equals(new Point(appleX, appleY))) {
+            score++;
             int tempx = (int) (Math.random() * (cols - 2)) + 1;
             int tempy = (int) (Math.random() * (rows - 2)) + 1;
             while (snakeSegments.contains(new Point(tempx, tempy))) {
