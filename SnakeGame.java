@@ -1,39 +1,49 @@
 import java.awt.*;
 import java.awt.event.*;
 import java.awt.image.BufferedImage;
-import java.util.ArrayList;
-import java.util.List;
 import javax.swing.*;
+
 
 
 public class SnakeGame extends JPanel {
 
-    private final List<Point> snakeSegments = new ArrayList<>(); //List that hold all snake segments
     private final int blockSize = 40; // Size of each block in pixels
     private int dx = 1, dy = 0, ndx = 1, ndy = 0; // The directions of the snake movement
     private final Timer timer = new Timer(150, e -> tick()); // Timer that controls game loop (game ticks)
-    private int size = 1; // size of map
+    private int size = 0; // size of map
     private final int rows = switch(size){case 0 -> 11; case 1 -> 17; case 2 -> 23; default -> 17;}; // Number of rows of blocks + wall
     private final int cols = switch(size){case 0 -> 12; case 1 -> 19; case 2 -> 26; default -> 19;}; // Number of columns of blocks + wall
     private final int parts = (int) ((cols-2)*0.30); // snake parts starting lenght
-    private final int startx = cols/2 -parts-1; // Starting X position of the snake
+    private final int startX = cols/2 -parts-1; // Starting X position of the snake
     private final BufferedImage board = new BufferedImage(blockSize * cols, blockSize * rows, BufferedImage.TYPE_INT_RGB);
     private final BufferedImage menu = new BufferedImage(300, 100, BufferedImage.TYPE_INT_ARGB);
-    private int menuX = blockSize * cols / 2 - 150, menuY = blockSize * rows / 2 - 50; // Position of the menu
+    private final int menuX = blockSize * cols / 2 - 150, menuY = blockSize * rows / 2 - 50; // Position of the menu
     private int appleX = cols/2 + parts+1; // X position of the apple
     private int appleY = rows/2; // Y position of the apple
     private boolean gameStarted = false, gameOver = false; // checks if game has started
     private int score = 0; // score (duh)
+    Snake snake = new Snake(parts, startX, rows/2); // Create a new snake object
 
+
+    public static void main(String[] args) {
+        SwingUtilities.invokeLater(() -> {
+            JFrame frame = new JFrame("Snake Game");
+            SnakeGame panel = new SnakeGame();
+            frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+            frame.add(panel);
+            frame.pack();
+            frame.setLocationRelativeTo(null);
+            frame.setVisible(true);
+            panel.requestFocusInWindow();
+        });
+    }
 
     public SnakeGame() {
         setPreferredSize(new Dimension(blockSize * cols, blockSize * rows)); //Setting the size of the window
-        bufferBoard();
-        bufferMenu();
-
-        for (int section = 0; section < parts; section++) snakeSegments.add(new Point(startx + section, rows/2)); //Adding the starting snake to the list
-
+        bufferBoard(); // Load the board into a buffered image to improve performance
+        bufferMenu(); // Load the menu into a buffered image to improve performance
         setFocusable(true); //Focuses on window to listen for key events
+
         addKeyListener(new KeyAdapter() {
             @Override // overriding the kepressed method
             public void keyPressed(KeyEvent e) {
@@ -49,6 +59,44 @@ public class SnakeGame extends JPanel {
         });
     }
 
+    private void startGame() {
+        gameStarted = true; gameOver = false;
+        score = 0;
+        snake.resetSnake();
+        appleX = cols / 2 + parts + 1; appleY = rows / 2;
+        dx = 1; dy = 0; ndx = 1; ndy = 0;
+        timer.start();
+    }
+
+    private void tick() {
+        if (!gameStarted || gameOver) {
+            timer.stop();            
+            repaint();
+            return;
+        }
+
+        Point next = snake.getNextHeadPosition(ndx, ndy);
+        
+        boolean hitWall = next.x < 1 || next.x >= cols - 1 || next.y < 1 || next.y >= rows - 1;
+        if (hitWall || snake.snakeSegments.contains(next)) {
+            gameOver = true;
+            return;
+        }
+
+        snake.addSegment(next);
+        dx = ndx; dy = ndy;
+        if (next.equals(new Point(appleX, appleY))) {
+            score++;
+            do {
+                appleX = (int) (Math.random() * (cols - 2)) + 1;
+                appleY = (int) (Math.random() * (rows - 2)) + 1;
+            } while (snake.snakeSegments.contains(new Point(appleX, appleY)));
+        } else {
+            snake.removeTail();
+        }
+        repaint();
+    }
+
     @Override
     protected void paintComponent(Graphics g) {
         super.paintComponent(g);
@@ -56,7 +104,7 @@ public class SnakeGame extends JPanel {
 
         drawBoard(g2d);
         drawApple(g2d, appleX, appleY);
-        drawSnake(g2d);
+        snake.drawSnake(g2d, blockSize);
         if (!gameStarted || gameOver) drawMenu(g2d);
         g2d.drawString("Score: " + score, 20, 20);
     }
@@ -100,79 +148,12 @@ public class SnakeGame extends JPanel {
         g2d.dispose();
     }
 
-    private void startGame() {
-        gameStarted = true; gameOver = false;
-        score = 0;
-        snakeSegments.clear();
-        for (int section = 0; section < parts; section++) 
-            snakeSegments.add(new Point(startx + section, rows / 2));
-        appleX = cols / 2 + parts + 1; appleY = rows / 2;
-        dx = 1; dy = 0; ndx = 1; ndy = 0;
-        timer.start();
-    }
-
     private void drawMenu(Graphics2D g2d) {
         g2d.drawImage(menu, menuX, menuY, null);
-    }
-
-    private void drawSnake(Graphics2D g2d) {
-        g2d.setColor(Color.BLUE);
-        for (Point segment : snakeSegments) {
-            g2d.fillRect(segment.x * blockSize, segment.y * blockSize, blockSize, blockSize);
-        }
     }
 
     public void drawApple(Graphics2D g2d, int appleX, int appleY) {
         g2d.setColor(Color.RED);
         g2d.fillOval(appleX * blockSize+3, appleY * blockSize+3, blockSize-6, blockSize-6);
-    }
-
-    private void tick() {
-        // System.out.println(timer.getDelay());
-        if (!gameStarted || gameOver) {
-            timer.stop();
-            menuX = blockSize * cols / 2 - 150;
-            
-            repaint();
-            return;
-        } else {
-            menuX = blockSize * cols + 200;
-            gameOver = false;
-        }
-
-        Point head = snakeSegments.get(snakeSegments.size() - 1);
-        Point next = new Point(head.x + ndx, head.y + ndy);
-
-        boolean hitWall = next.x < 1 || next.x >= cols - 1 || next.y < 1 || next.y >= rows - 1;
-        if (hitWall || snakeSegments.contains(next)) {
-            gameOver = true;
-            return;
-        }
-
-        snakeSegments.add(next);
-        if (next.equals(new Point(appleX, appleY))) {
-            score++;
-            do {
-                appleX = (int) (Math.random() * (cols - 2)) + 1;
-                appleY = (int) (Math.random() * (rows - 2)) + 1;
-            } while (snakeSegments.contains(new Point(appleX, appleY)));
-        } else {
-            snakeSegments.remove(0); // drop tail if not eating food
-        }
-        dx = ndx; dy = ndy;
-        repaint();
-    }
-
-    public static void main(String[] args) {
-        SwingUtilities.invokeLater(() -> {
-            JFrame frame = new JFrame("Snake Game");
-            SnakeGame panel = new SnakeGame();
-            frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-            frame.add(panel);
-            frame.pack();
-            frame.setLocationRelativeTo(null);
-            frame.setVisible(true);
-            panel.requestFocusInWindow();
-        });
     }
 }
