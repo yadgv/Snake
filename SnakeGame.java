@@ -3,8 +3,6 @@ import java.awt.event.*;
 import java.awt.image.BufferedImage;
 import javax.swing.*;
 
-
-
 public class SnakeGame extends JPanel {
 
     private final int blockSize = 40; // Size of each block in pixels
@@ -50,10 +48,10 @@ public class SnakeGame extends JPanel {
                 if (!gameStarted || gameOver) startGame(); // Check if game is over and started a new game if any key is pressed
                 switch (e.getKeyCode()) {
                     case KeyEvent.VK_ESCAPE -> {gameStarted = false;} // if esc is pressed game pauses
-                    case KeyEvent.VK_UP -> {if (dy == 0) {ndx = 0; ndy = -1;}} // check if moving in y direction, if not change direction to up
-                    case KeyEvent.VK_DOWN -> {if (dy == 0) {ndx = 0; ndy = 1;}} 
-                    case KeyEvent.VK_LEFT -> {if (dx == 0) {ndx = -1; ndy = 0;}} // check if moving in x direction, if not change direction to left
-                    case KeyEvent.VK_RIGHT -> {if (dx == 0) {ndx = 1; ndy = 0;}}
+                    case KeyEvent.VK_UP, KeyEvent.VK_W -> {if (dy == 0) {ndx = 0; ndy = -1;}} // check if moving in y direction, if not change direction to up
+                    case KeyEvent.VK_DOWN, KeyEvent.VK_S -> {if (dy == 0) {ndx = 0; ndy = 1;}} 
+                    case KeyEvent.VK_LEFT, KeyEvent.VK_A -> {if (dx == 0) {ndx = -1; ndy = 0;}} // check if moving in x direction, if not change direction to left
+                    case KeyEvent.VK_RIGHT, KeyEvent.VK_D -> {if (dx == 0) {ndx = 1; ndy = 0;}}
                 }
             }
         });
@@ -106,6 +104,8 @@ public class SnakeGame extends JPanel {
         drawApple(g2d, appleX, appleY);
         snake.drawSnake(g2d, blockSize);
         if (!gameStarted || gameOver) drawMenu(g2d);
+        g2d.setColor(Color.WHITE);
+        g2d.setFont(new Font("Arial", Font.BOLD, 24));
         g2d.drawString("Score: " + score, 20, 20);
     }
 
@@ -141,6 +141,7 @@ public class SnakeGame extends JPanel {
         Graphics2D g2d = menu.createGraphics();
         g2d.setColor(new Color(0, 0, 0, 200));
         g2d.fillRect(0, 0, 300, 100);
+        
         g2d.setColor(Color.WHITE);
         g2d.setFont(new Font("Arial", Font.BOLD, 24));
         g2d.drawString("Snake Game", 80, 30);
